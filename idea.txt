@@ -1,0 +1,7 @@
+Prompt (encoded text)
+v
+decoder (try n combinations)
+v
+if len > 1 word && at least 1 word correct, check levenshtein distance  to account for typos
+v
+tell user which algorithm yielded success
