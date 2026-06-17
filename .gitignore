@@ -1,2 +1,7 @@
 __pycache__
 .claude
+
+# Node / Vercel
+node_modules
+.vercel
+*.log
