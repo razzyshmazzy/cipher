@@ -100,7 +100,7 @@
   </style>
 </head>
 <body>
-  <video id="bg" autoplay muted playsinline preload="auto">
+  <video id="bg" autoplay muted loop playsinline preload="auto" poster="/poster.jpg">
     <source src="/sky.mp4" type="video/mp4">
   </video>
   <div id="scrim"></div>
@@ -128,24 +128,10 @@
   </div>
 
   <script>
-    // --- Ping-pong background video ---
-    // Play forward natively (smooth), then drive currentTime backwards with
-    // rAF on 'ended', and resume forward once we reach the start again.
-    const video = document.getElementById("bg");
-    function reverse() {
-      let last = performance.now();
-      function step(now) {
-        const dt = (now - last) / 1000;
-        last = now;
-        const t = video.currentTime - dt;
-        if (t <= 0) { video.currentTime = 0; video.play().catch(() => {}); return; }
-        video.currentTime = t;
-        requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-    video.addEventListener("ended", () => { video.pause(); reverse(); });
-    video.play().catch(() => {}); // some browsers need an explicit nudge
+    // --- Background video ---
+    // sky.mp4 is baked as a forward+reverse palindrome, so a plain native loop
+    // bounces seamlessly. Just nudge play() for browsers that need it.
+    document.getElementById("bg").play().catch(() => {});
 
     // --- Views ---
     const $ = (id) => document.getElementById(id);
