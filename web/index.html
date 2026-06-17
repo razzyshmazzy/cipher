@@ -3,63 +3,193 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cipher cracker</title>
+  <title>Cipher</title>
   <style>
-    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
     body {
-      font-family: system-ui, sans-serif; max-width: 680px; margin: 6vh auto;
-      padding: 0 1rem; line-height: 1.5;
+      font-family: system-ui, sans-serif;
+      color: #fff;
+      overflow: hidden;
     }
-    h1 { margin-bottom: .25rem; }
-    p.sub { margin-top: 0; opacity: .7; }
-    textarea {
-      width: 100%; box-sizing: border-box; min-height: 5rem; font-size: 1rem;
-      padding: .6rem; border-radius: 8px; border: 1px solid #8884; font-family: inherit;
+
+    /* Background video */
+    #bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
     }
-    button {
-      margin-top: .6rem; padding: .55rem 1.1rem; font-size: 1rem; cursor: pointer;
-      border-radius: 8px; border: 0; background: #3b82f6; color: #fff;
+    /* Subtle scrim so text stays legible over any frame */
+    #scrim {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,.15), rgba(0,0,0,.45));
+      z-index: -1;
     }
-    button:disabled { opacity: .5; cursor: default; }
-    .best {
-      margin-top: 1.4rem; padding: 1rem; border-radius: 8px; background: #3b82f622;
-      display: none;
+
+    /* Centered stage */
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
-    .best .text { font-size: 1.25rem; font-weight: 600; word-break: break-word; }
-    .best .meta { opacity: .7; font-size: .9rem; margin-top: .25rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: .9rem; }
-    th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid #8883; }
+
+    /* Naked input */
+    #msg {
+      width: min(40rem, 90vw);
+      background: transparent;
+      border: 0;
+      outline: 0;
+      color: #fff;
+      caret-color: #fff;
+      text-align: center;
+      font: 400 clamp(1.4rem, 4vw, 2.4rem)/1.3 system-ui, sans-serif;
+      text-shadow: 0 2px 12px rgba(0,0,0,.6);
+    }
+    #msg::placeholder { color: rgba(255,255,255,.55); }
+
+    /* Result box */
+    #result {
+      width: min(44rem, 92vw);
+      max-height: 80vh;
+      overflow: auto;
+      background: rgba(10, 14, 22, .55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 1.5rem 1.6rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    #result .label { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; opacity: .6; }
+    #result .text { font-size: clamp(1.3rem, 3vw, 1.9rem); font-weight: 600; word-break: break-word; margin: .25rem 0 .4rem; }
+    #result .meta { opacity: .7; font-size: .9rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1.2rem; font-size: .85rem; }
+    th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid rgba(255,255,255,.12); }
     td.score { text-align: right; font-variant-numeric: tabular-nums; }
-    .err { color: #dc2626; margin-top: 1rem; display: none; }
+    .err { color: #ff9b9b; }
+
+    /* Back button */
+    #back {
+      position: fixed;
+      top: 1.1rem;
+      left: 1.1rem;
+      z-index: 2;
+      display: none;
+      align-items: center;
+      gap: .4rem;
+      padding: .5rem .9rem;
+      font: 500 .95rem system-ui, sans-serif;
+      color: #fff;
+      background: rgba(10, 14, 22, .45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    #back:hover { background: rgba(10, 14, 22, .7); }
+
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <h1>Cipher cracker</h1>
-  <p class="sub">Paste an encoded message. We try every cipher and return the most English-like decoding.</p>
+  <video id="bg" autoplay muted playsinline preload="auto">
+    <source src="/sky.mp4" type="video/mp4">
+  </video>
+  <div id="scrim"></div>
 
-  <textarea id="msg" placeholder="z cfmv bferkr wifd cltbp jkri" autofocus></textarea>
-  <br>
-  <button id="go">Crack it</button>
+  <button id="back" type="button">← back</button>
 
-  <div class="best" id="best">
-    <div class="text" id="bestText"></div>
-    <div class="meta" id="bestMeta"></div>
+  <!-- Input view -->
+  <div class="stage" id="inputView">
+    <input id="msg" type="text" autocomplete="off" autocapitalize="off"
+           spellcheck="false" placeholder="enter a message" autofocus>
   </div>
-  <div class="err" id="err"></div>
 
-  <table id="ranked" hidden>
-    <thead><tr><th>Method</th><th>Decoding</th><th>Key</th><th class="score">Score</th></tr></thead>
-    <tbody></tbody>
-  </table>
+  <!-- Result view -->
+  <div class="stage" id="resultView" hidden>
+    <div id="result">
+      <div class="label">Best guess</div>
+      <div class="text" id="bestText"></div>
+      <div class="meta" id="bestMeta"></div>
+      <table id="ranked" hidden>
+        <thead><tr><th>Method</th><th>Decoding</th><th>Key</th><th class="score">Score</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="err" id="err" hidden></div>
+    </div>
+  </div>
 
   <script>
+    // --- Ping-pong background video ---
+    // Play forward natively (smooth), then drive currentTime backwards with
+    // rAF on 'ended', and resume forward once we reach the start again.
+    const video = document.getElementById("bg");
+    function reverse() {
+      let last = performance.now();
+      function step(now) {
+        const dt = (now - last) / 1000;
+        last = now;
+        const t = video.currentTime - dt;
+        if (t <= 0) { video.currentTime = 0; video.play().catch(() => {}); return; }
+        video.currentTime = t;
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    video.addEventListener("ended", () => { video.pause(); reverse(); });
+    video.play().catch(() => {}); // some browsers need an explicit nudge
+
+    // --- Views ---
     const $ = (id) => document.getElementById(id);
-    const go = $("go"), best = $("best"), err = $("err"), ranked = $("ranked");
+    const inputView = $("inputView"), resultView = $("resultView"), back = $("back");
+    const input = $("msg"), ranked = $("ranked"), err = $("err");
+
+    function showInput() {
+      resultView.hidden = true;
+      back.style.display = "none";
+      inputView.hidden = false;
+      input.focus();
+      input.select();
+    }
+    function showResult() {
+      inputView.hidden = true;
+      resultView.hidden = false;
+      back.style.display = "flex";
+    }
+
+    function render(data) {
+      err.hidden = true;
+      $("bestText").textContent = data.best.text || "(no readable decoding)";
+      $("bestMeta").textContent =
+        `via ${data.best.method}` +
+        (data.best.key ? ` · key "${data.best.key}"` : "") +
+        (data.best.score != null ? ` · score ${data.best.score.toFixed(2)}` : "");
+
+      const tbody = ranked.querySelector("tbody");
+      tbody.innerHTML = "";
+      for (const c of data.ranked) {
+        const row = tbody.insertRow();
+        row.insertCell().textContent = c.method;
+        row.insertCell().textContent = c.text;
+        row.insertCell().textContent = c.key || "";
+        const s = row.insertCell();
+        s.className = "score";
+        s.textContent = c.score == null ? "—" : c.score.toFixed(2);
+      }
+      ranked.hidden = false;
+    }
 
     async function crack() {
-      const message = $("msg").value;
+      const message = input.value;
       if (!message.trim()) return;
-      go.disabled = true; err.style.display = "none";
       try {
         const res = await fetch("/api/crack", {
           method: "POST",
@@ -67,39 +197,21 @@
           body: JSON.stringify({ message }),
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-
-        $("bestText").textContent = data.best.text || "(no readable decoding)";
-        $("bestMeta").textContent =
-          `via ${data.best.method}` +
-          (data.best.key ? ` · key "${data.best.key}"` : "") +
-          (data.best.score != null ? ` · score ${data.best.score.toFixed(2)}` : "");
-        best.style.display = "block";
-
-        const tbody = ranked.querySelector("tbody");
-        tbody.innerHTML = "";
-        for (const c of data.ranked) {
-          const row = tbody.insertRow();
-          row.insertCell().textContent = c.method;
-          row.insertCell().textContent = c.text;
-          row.insertCell().textContent = c.key || "";
-          const s = row.insertCell();
-          s.className = "score";
-          s.textContent = c.score == null ? "—" : c.score.toFixed(2);
-        }
-        ranked.hidden = false;
+        render(await res.json());
       } catch (e) {
+        $("bestText").textContent = "";
+        $("bestMeta").textContent = "";
+        ranked.hidden = true;
+        err.hidden = false;
         err.textContent = "Something went wrong: " + e.message;
-        err.style.display = "block";
-      } finally {
-        go.disabled = false;
       }
+      showResult();
     }
 
-    go.addEventListener("click", crack);
-    $("msg").addEventListener("keydown", (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") crack();
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); crack(); }
     });
+    back.addEventListener("click", showInput);
   </script>
 </body>
 </html>
