@@ -44,7 +44,24 @@ check("vigenere long: plaintext", vig.text === plain);
 r = crack(enc("i love konata from lucky star", "lemon"));
 check("vigenere short loses", r.best.method !== "vigenere", `best=${r.best.method}`);
 
-// 5. Edge cases must not throw and must be JSON-safe (no Infinity)
+// 5. Consensus tiebreak: when 2+ methods agree near the top, prefer that.
+const caesarEnc = (s, k) => [...s].map((l) => (l in pos ? ref[(pos[l] + k) % 26] : l)).join("");
+const railEnc = (s, rails) => {
+  const pat = []; let rr = 0, st = 1;
+  for (let i = 0; i < s.length; i++) { pat.push(rr); if (rr === 0) st = 1; else if (rr === rails - 1) st = -1; rr += st; }
+  const rows = Array.from({ length: rails }, () => []);
+  for (let i = 0; i < s.length; i++) rows[pat[i]].push(s[i]);
+  return rows.map((x) => x.join("")).join("");
+};
+// caesar+affine agree on "ice cream"; raw top scorer is a different garbage phrase.
+r = crack(caesarEnc("ice cream", 3));
+check("consensus fixes caesar", r.best.text === "ice cream", `best=${r.best.text}`);
+// rail-fence: the substitution bloc agrees on garbage, but it's far below the
+// correct top score, so the margin rule must NOT override it.
+r = crack(railEnc("thank you", 2));
+check("consensus spares rail", r.best.text === "thank you", `best=${r.best.text}`);
+
+// 6. Edge cases must not throw and must be JSON-safe (no Infinity)
 for (const m of ["", "   ", "12345"]) {
   try {
     const out = crack(m);
